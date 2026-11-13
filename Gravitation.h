@@ -5,7 +5,9 @@
 #import <AudioToolbox/AudioToolbox.h>
 #import <objc/runtime.h>
 
-#if __has_include(<rootless.h>)
+#if __has_include(<roothide.h>)
+#include <roothide.h>
+#elif __has_include(<rootless.h>)
 #include <rootless.h>
 #else
 #define jbroot(path) (path)
@@ -46,6 +48,7 @@
 
 - (void)startGravitySimulation;
 - (void)stopGravitySimulation;
+- (void)gravitation_handleToggleNotification;
 @end
 
 @interface SBFolderController : NSObject
@@ -73,6 +76,8 @@
 @interface SBLockScreenManager : NSObject
 + (instancetype)sharedInstance;
 - (BOOL)isLockScreenVisible;
+- (BOOL)isUILocked;
+- (BOOL)isScreenOn;
 @end
 
 @interface SpringBoard : UIApplication

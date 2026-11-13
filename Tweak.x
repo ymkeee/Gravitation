@@ -69,12 +69,15 @@ static void handleShakeTrigger(void) {
     if (!isTweakEnabled) return;
 
     // Do not trigger if screen is locked or screen is off
-    id lockScreenMgr = [%c(SBLockScreenManager) sharedInstance];
+    SBLockScreenManager *lockScreenMgr = [%c(SBLockScreenManager) sharedInstance];
     if (lockScreenMgr) {
-        if ([lockScreenMgr respondsToSelector:@selector(isScreenOn)] && ![lockScreenMgr isScreenOn]) {
+        if ([lockScreenMgr respondsToSelector:@selector(isLockScreenVisible)] && [lockScreenMgr isLockScreenVisible]) {
             return;
         }
-        if ([lockScreenMgr respondsToSelector:@selector(isLockScreenVisible)] && [lockScreenMgr isLockScreenVisible]) {
+        if ([lockScreenMgr respondsToSelector:@selector(isUILocked)] && [lockScreenMgr isUILocked]) {
+            return;
+        }
+        if ([lockScreenMgr respondsToSelector:@selector(isScreenOn)] && ![lockScreenMgr isScreenOn]) {
             return;
         }
     }
