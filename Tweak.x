@@ -7,8 +7,8 @@ static const void *kOriginalBoundsKey = &kOriginalBoundsKey;
 
 // Runtime state
 static BOOL isGlobalGravityActive = NO;
-static __weak SBIconListView *currentActiveListView = nil;
 static NSTimeInterval lastShakeTimestamp = 0.0;
+static CMMotionManager *hardwareShakeDetector = nil;
 
 // Preferences
 static BOOL isTweakEnabled = YES;
@@ -21,91 +21,60 @@ static CGFloat bounciness = 0.55;
 // #pragma mark - Preferences Loading
 
 static void loadPreferences(void) {
+    isTweakEnabled = YES;
+    isFingerGravityEnabled = YES;
+    shouldWidgetsFall = YES;
+    dynamicIslandCollision = YES;
+    hapticFeedbackEnabled = YES;
+    bounciness = 0.55;
+
     CFPreferencesAppSynchronize(CFSTR("me.kritanta.gravitationprefs"));
 
     Boolean exists = false;
     Boolean bVal = CFPreferencesGetAppBooleanValue(CFSTR("tweakEnabled"), CFSTR("me.kritanta.gravitationprefs"), &exists);
-    isTweakEnabled = exists ? bVal : YES;
+    if (exists) isTweakEnabled = bVal;
 
     bVal = CFPreferencesGetAppBooleanValue(CFSTR("fingerGravity"), CFSTR("me.kritanta.gravitationprefs"), &exists);
-    isFingerGravityEnabled = exists ? bVal : YES;
+    if (exists) isFingerGravityEnabled = bVal;
 
     bVal = CFPreferencesGetAppBooleanValue(CFSTR("widgetsFall"), CFSTR("me.kritanta.gravitationprefs"), &exists);
-    shouldWidgetsFall = exists ? bVal : YES;
+    if (exists) shouldWidgetsFall = bVal;
 
     bVal = CFPreferencesGetAppBooleanValue(CFSTR("dynamicIslandCollision"), CFSTR("me.kritanta.gravitationprefs"), &exists);
-    dynamicIslandCollision = exists ? bVal : YES;
+    if (exists) dynamicIslandCollision = bVal;
 
     bVal = CFPreferencesGetAppBooleanValue(CFSTR("hapticFeedback"), CFSTR("me.kritanta.gravitationprefs"), &exists);
-    hapticFeedbackEnabled = exists ? bVal : YES;
+    if (exists) hapticFeedbackEnabled = bVal;
 
     CFPropertyListRef bRef = CFPreferencesCopyAppValue(CFSTR("bounciness"), CFSTR("me.kritanta.gravitationprefs"));
-    if (bRef && CFGetTypeID(bRef) == CFNumberGetTypeID()) {
-        bounciness = [(__bridge NSNumber *)bRef doubleValue];
-        if (bounciness < 0.0) bounciness = 0.0;
-        if (bounciness > 1.0) bounciness = 1.0;
-    } else {
-        bounciness = 0.55;
-    }
-}
-
-// #pragma mark - Helper to locate the active visible SBIconListView
-
-static SBIconListView *getActiveVisibleIconListView(void) {
-    SBIconController *iconController = [%c(SBIconController) sharedInstance];
-    if (!iconController) return nil;
-
-    // 1. If an opened folder controller exists, its current list view is active
-    if ([iconController respondsToSelector:@selector(openedFolderController)]) {
-        SBFolderController *opened = [iconController openedFolderController];
-        if (opened && [opened respondsToSelector:@selector(currentIconListView)]) {
-            SBIconListView *list = [opened currentIconListView];
-            if (list && list.window != nil && !list.hidden && list.alpha > 0.01) {
-                return list;
-            }
+    if (bRef) {
+        if (CFGetTypeID(bRef) == CFNumberGetTypeID()) {
+            bounciness = [(__bridge NSNumber *)bRef doubleValue];
+            if (bounciness < 0.0) bounciness = 0.0;
+            if (bounciness > 1.0) bounciness = 1.0;
         }
+        CFRelease(bRef);
     }
-
-    // 2. Otherwise use the root folder controller's current list view
-    if ([iconController respondsToSelector:@selector(rootFolderController)]) {
-        SBRootFolderController *root = [iconController rootFolderController];
-        if (root && [root respondsToSelector:@selector(currentIconListView)]) {
-            SBIconListView *list = [root currentIconListView];
-            if (list && list.window != nil && !list.hidden && list.alpha > 0.01) {
-                return list;
-            }
-        }
-    }
-
-    return nil;
 }
 
 // #pragma mark - Shake Trigger Handler
 
 static void handleShakeTrigger(void) {
     NSTimeInterval now = CACurrentMediaTime();
-    if (now - lastShakeTimestamp < 0.65) {
+    if (now - lastShakeTimestamp < 0.7) {
         return; // Debounce rapid shakes
     }
     lastShakeTimestamp = now;
 
     if (!isTweakEnabled) return;
 
-    // Do not trigger on Lock Screen or Notification Center / Cover Sheet
-    id coverSheet = [%c(SBCoverSheetPresentationManager) sharedInstance];
-    if (coverSheet && [coverSheet respondsToSelector:@selector(isVisible)] && [coverSheet isVisible]) {
-        return;
-    }
-
+    // Do not trigger if screen is locked or screen is off
     id lockScreenMgr = [%c(SBLockScreenManager) sharedInstance];
-    if (lockScreenMgr && [lockScreenMgr respondsToSelector:@selector(isLockScreenVisible)] && [lockScreenMgr isLockScreenVisible]) {
-        return;
-    }
-
-    // Do not trigger if an application is active in the foreground
-    id sbApp = [%c(SpringBoard) sharedApplication];
-    if (sbApp && [sbApp respondsToSelector:@selector(_accessibilityFrontMostApplication)]) {
-        if ([sbApp _accessibilityFrontMostApplication] != nil) {
+    if (lockScreenMgr) {
+        if ([lockScreenMgr respondsToSelector:@selector(isScreenOn)] && ![lockScreenMgr isScreenOn]) {
+            return;
+        }
+        if ([lockScreenMgr respondsToSelector:@selector(isLockScreenVisible)] && [lockScreenMgr isLockScreenVisible]) {
             return;
         }
     }
@@ -116,33 +85,59 @@ static void handleShakeTrigger(void) {
         return;
     }
 
-    // Toggle Gravity state
-    if (isGlobalGravityActive && currentActiveListView) {
-        if (hapticFeedbackEnabled) {
-            UINotificationFeedbackGenerator *generator = [[UINotificationFeedbackGenerator alloc] init];
-            [generator notificationOccurred:UINotificationFeedbackTypeSuccess];
-        }
-        [currentActiveListView stopGravitySimulation];
-    } else {
-        SBIconListView *activeList = getActiveVisibleIconListView();
-        if (activeList) {
-            if (hapticFeedbackEnabled) {
-                UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
-                [generator impactOccurred];
+    // Provide haptic feedback on successful shake trigger
+    if (hapticFeedbackEnabled) {
+        AudioServicesPlaySystemSound(1519); // Crisp Peek haptic tap
+    }
+
+    // Broadcast toggle event to active icon list view
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"GravitationToggleNotification" object:nil];
+}
+
+// #pragma mark - Hardware Accelerometer Shake Detector (CoreMotion Fallback)
+
+static void startHardwareShakeDetector(void) {
+    if (hardwareShakeDetector) return;
+
+    hardwareShakeDetector = [[CMMotionManager alloc] init];
+    if (hardwareShakeDetector.isAccelerometerAvailable) {
+        // 30 Hz polling uses negligible CPU/battery
+        hardwareShakeDetector.accelerometerUpdateInterval = 1.0 / 30.0;
+        [hardwareShakeDetector startAccelerometerUpdatesToQueue:[NSOperationQueue mainQueue]
+                                                    withHandler:^(CMAccelerometerData * _Nullable data, NSError * _Nullable error) {
+            if (error || !data) return;
+
+            double x = data.acceleration.x;
+            double y = data.acceleration.y;
+            double z = data.acceleration.z;
+            double gForce = sqrt(x * x + y * y + z * z);
+
+            // Resting device = 1.0g. Deliberate physical shake produces spikes > 2.2g.
+            if (gForce > 2.2) {
+                handleShakeTrigger();
             }
-            currentActiveListView = activeList;
-            [activeList startGravitySimulation];
-        }
+        }];
     }
 }
 
-// #pragma mark - Shake Hooks
+// #pragma mark - UIKit Motion Shake Hooks
+
+%hook UIWindow
+
+- (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
+    %orig;
+    if (motion == UIEventSubtypeMotionShake || (event && event.type == 1 && event.subtype == 1)) {
+        handleShakeTrigger();
+    }
+}
+
+%end
 
 %hook SBHomeScreenWindow
 
 - (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
     %orig;
-    if (motion == UIEventSubtypeMotionShake || event.subtype == UIEventSubtypeMotionShake) {
+    if (motion == UIEventSubtypeMotionShake || (event && event.type == 1 && event.subtype == 1)) {
         handleShakeTrigger();
     }
 }
@@ -151,9 +146,14 @@ static void handleShakeTrigger(void) {
 
 %hook SpringBoard
 
+- (void)applicationDidFinishLaunching:(id)application {
+    %orig;
+    startHardwareShakeDetector();
+}
+
 - (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
     %orig;
-    if (motion == UIEventSubtypeMotionShake || event.subtype == UIEventSubtypeMotionShake) {
+    if (motion == UIEventSubtypeMotionShake || (event && event.type == 1 && event.subtype == 1)) {
         handleShakeTrigger();
     }
 }
@@ -173,12 +173,30 @@ static void handleShakeTrigger(void) {
 %property (nonatomic, strong) CMMotionManager *gravityMotionManager;
 %property (nonatomic, strong) NSMutableArray *gravityFallingViews;
 
-// Prevent SpringBoard layout passes from disrupting active physics simulation
+- (void)didMoveToWindow {
+    %orig;
+    if (self.window && !objc_getAssociatedObject(self, "gravitation_observed")) {
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(gravitation_handleToggleNotification)
+                                                     name:@"GravitationToggleNotification"
+                                                   object:nil];
+        objc_setAssociatedObject(self, "gravitation_observed", @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+}
+
 - (void)layoutIconsNow {
     if (self.isGravitySimulating) {
-        return;
+        return; // Do not disrupt active physics animation
     }
     %orig;
+
+    if (!objc_getAssociatedObject(self, "gravitation_observed")) {
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(gravitation_handleToggleNotification)
+                                                     name:@"GravitationToggleNotification"
+                                                   object:nil];
+        objc_setAssociatedObject(self, "gravitation_observed", @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
 }
 
 - (void)layoutSubviews {
@@ -188,7 +206,46 @@ static void handleShakeTrigger(void) {
     %orig;
 }
 
-// Helper to disable parent scroll view during gravity
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"GravitationToggleNotification" object:nil];
+    %orig;
+}
+
+// Notification handler for shake toggle
+%new
+- (void)gravitation_handleToggleNotification {
+    // If this list view is already simulating gravity, stop it and restore icons
+    if (self.isGravitySimulating) {
+        [self stopGravitySimulation];
+        return;
+    }
+
+    // Must be in a window and visible
+    if (!self.window || self.hidden || self.alpha < 0.05) {
+        return;
+    }
+
+    // Exclude the Dock (dock remains a solid base)
+    if ([self isKindOfClass:%c(SBDockIconListView)]) {
+        return;
+    }
+
+    // Check if view is currently visible on screen (not an offscreen page)
+    CGRect screenBounds = [UIScreen mainScreen].bounds;
+    CGRect frameInWindow = [self convertRect:self.bounds toView:nil];
+    if (frameInWindow.origin.x < -60 || frameInWindow.origin.x > screenBounds.size.width - 60) {
+        return; // Offscreen page in horizontal scroll view
+    }
+
+    if (self.bounds.size.width < 100 || self.bounds.size.height < 100) {
+        return;
+    }
+
+    // Start gravity on the currently visible page
+    [self startGravitySimulation];
+}
+
+// Helper to disable parent page scroll view during gravity
 %new
 - (void)setPageScrollingEnabled:(BOOL)enabled {
     UIView *parent = self.superview;
@@ -201,7 +258,7 @@ static void handleShakeTrigger(void) {
     }
 }
 
-// #pragma mark - Start Gravity
+// #pragma mark - Start Gravity Simulation
 
 %new
 - (void)startGravitySimulation {
@@ -210,7 +267,7 @@ static void handleShakeTrigger(void) {
     self.isGravitySimulating = YES;
     isGlobalGravityActive = YES;
 
-    // Freeze page scrolling to avoid view virtualization bugs
+    // Freeze page scrolling so iOS doesn't virtualize/unload views mid-fall
     [self setPageScrollingEnabled:NO];
 
     NSMutableArray<UIView *> *fallingViews = [NSMutableArray array];
@@ -231,7 +288,7 @@ static void handleShakeTrigger(void) {
             }
         }
 
-        // SAVE EXACT PRE-PHYSICS GEOMETRY (ZERO REPOSITIONING BUGS ON RETURN)
+        // SAVE EXACT PRE-PHYSICS GEOMETRY (ZERO WRONG PLACEMENT BUGS ON RETURN)
         objc_setAssociatedObject(subview, kOriginalCenterKey, [NSValue valueWithCGPoint:subview.center], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         objc_setAssociatedObject(subview, kOriginalTransformKey, [NSValue valueWithCGAffineTransform:subview.transform], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         objc_setAssociatedObject(subview, kOriginalBoundsKey, [NSValue valueWithCGRect:subview.bounds], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -365,7 +422,6 @@ static void handleShakeTrigger(void) {
         self.gravityAnimator = nil;
         self.isGravitySimulating = NO;
         isGlobalGravityActive = NO;
-        currentActiveListView = nil;
 
         // Restore page scrolling
         [self setPageScrollingEnabled:YES];
@@ -462,5 +518,8 @@ static void handleShakeTrigger(void) {
         CFNotificationSuspensionBehaviorDeliverImmediately
     );
 
-    NSLog(@"[Gravitation] Initialized successfully for Dopamine RootHide (iOS 16.2)");
+    // Initialize the hardware shake detector
+    startHardwareShakeDetector();
+
+    NSLog(@"[Gravitation] Loaded successfully for Dopamine RootHide (iOS 16.2)");
 }
