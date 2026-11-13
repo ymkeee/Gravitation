@@ -1,0 +1,9 @@
+Package: me.kritanta.gravitation
+Name: Gravitation
+Version: 2.0.0
+Architecture: iphoneos-arm64e
+Description: Shake your phone to drop icons with gravity! Shake again to restore with zero bugs. Re-engineered for iOS 16 RootHide Dopamine on iPhone 14 Pro Max.
+Maintainer: Kritanta / RootHide Port
+Author: Kritanta
+Section: Tweaks
+Depends: mobilesubstrate, firmware (>= 15.0)

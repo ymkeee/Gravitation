@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>items</key>
+	<array>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>General Settings</string>
+			<key>footerText</key>
+			<string>Shake your iPhone to drop icons with real gravity physics. Shake again to restore them smoothly to their exact places.</string>
+			<key>isStaticText</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>KRTwitterCell</string>
+			<key>label</key>
+			<string>Kritanta</string>
+			<key>accountName</key>
+			<string>_kritanta</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>me.kritanta.gravitationprefs</string>
+			<key>key</key>
+			<string>tweakEnabled</string>
+			<key>label</key>
+			<string>Gravitation Enabled</string>
+			<key>PostNotification</key>
+			<string>me.kritanta.gravitationprefs/Prefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>me.kritanta.gravitationprefs</string>
+			<key>key</key>
+			<string>fingerGravity</string>
+			<key>label</key>
+			<string>Finger Gravity</string>
+			<key>PostNotification</key>
+			<string>me.kritanta.gravitationprefs/Prefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>me.kritanta.gravitationprefs</string>
+			<key>key</key>
+			<string>hapticFeedback</string>
+			<key>label</key>
+			<string>Haptic Feedback</string>
+			<key>PostNotification</key>
+			<string>me.kritanta.gravitationprefs/Prefs</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Widgets &amp; Screen Elements</string>
+			<key>footerText</key>
+			<string>When "Falling Widgets" is ON, widgets fall and tumble along with icons. When OFF, widgets stay in place as solid platforms that icons bounce off of.</string>
+			<key>isStaticText</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>me.kritanta.gravitationprefs</string>
+			<key>key</key>
+			<string>widgetsFall</string>
+			<key>label</key>
+			<string>Falling Widgets</string>
+			<key>PostNotification</key>
+			<string>me.kritanta.gravitationprefs/Prefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>me.kritanta.gravitationprefs</string>
+			<key>key</key>
+			<string>dynamicIslandCollision</string>
+			<key>label</key>
+			<string>Dynamic Island Collision</string>
+			<key>PostNotification</key>
+			<string>me.kritanta.gravitationprefs/Prefs</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Icon Bounciness</string>
+			<key>footerText</key>
+			<string>Adjust elasticity of collisions.</string>
+			<key>isStaticText</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSliderCell</string>
+			<key>default</key>
+			<real>0.55</real>
+			<key>defaults</key>
+			<string>me.kritanta.gravitationprefs</string>
+			<key>key</key>
+			<string>bounciness</string>
+			<key>min</key>
+			<real>0.0</real>
+			<key>max</key>
+			<real>1.0</real>
+			<key>showValue</key>
+			<true/>
+			<key>PostNotification</key>
+			<string>me.kritanta.gravitationprefs/Prefs</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>About &amp; Support</string>
+			<key>footerText</key>
+			<string>Gravitation RootHide Edition for iOS 16</string>
+			<key>isStaticText</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>GravSourceLinkCell</string>
+			<key>cell</key>
+			<string>PSStaticTextCell</string>
+			<key>label</key>
+			<string>Original Source Code</string>
+			<key>icon</key>
+			<string>github.png</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>GravDonationLinkCell</string>
+			<key>cell</key>
+			<string>PSStaticTextCell</string>
+			<key>label</key>
+			<string>Donate</string>
+			<key>icon</key>
+			<string>paypal.png</string>
+		</dict>
+	</array>
+	<key>title</key>
+	<string>Gravitation</string>
+</dict>
+</plist>

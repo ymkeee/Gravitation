@@ -1,0 +1,49 @@
+name: Build Gravitation Tweak (RootHide)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install Homebrew dependencies
+      run: |
+        brew install ldid
+    
+    - name: Install RootHide Theos
+      run: |
+        git clone --recursive https://github.com/roothide/theos.git $HOME/theos
+        echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+        echo "PATH=$HOME/theos/bin:$PATH" >> $GITHUB_ENV
+    
+    - name: Download iOS SDKs
+      run: |
+        git clone --depth=1 https://github.com/theos/sdks.git $HOME/theos-sdks
+        cp -R $HOME/theos-sdks/* $HOME/theos/sdks/
+        ls -la $HOME/theos/sdks/
+    
+    - name: Build RootHide package
+      run: |
+        export THEOS=$HOME/theos
+        make clean
+        make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
+    
+    - name: List packages
+      run: |
+        ls -lah packages/
+    
+    - name: Upload .deb artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Gravitation-RootHide-deb
+        path: packages/*.deb
+        if-no-files-found: error
