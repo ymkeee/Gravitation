@@ -18,38 +18,30 @@ if %ERRORLEVEL% NEQ 0 (
 echo [OK] Git is installed
 echo.
 
-set /p GITHUB_USER="Enter your GitHub username: "
-if "%GITHUB_USER%"=="" (
-    echo [ERROR] Username cannot be empty!
-    pause
-    exit /b 1
-)
+set /p GITHUB_USER="Enter your GitHub username (default ymkeee): "
+if "%GITHUB_USER%"=="" set GITHUB_USER=ymkeee
 
 echo.
 echo GitHub Repository: https://github.com/%GITHUB_USER%/Gravitation
 echo.
-echo IMPORTANT: Create the repository on GitHub first!
-echo 1. Go to https://github.com/new
-echo 2. Repository name: Gravitation
-echo 3. Make it Public or Private
-echo 4. DO NOT add README, .gitignore, or license
-echo 5. Click "Create repository"
-echo.
-set /p READY="Have you created the repository? (y/n): "
-if /i not "%READY%"=="y" (
-    echo.
-    echo Exiting... Create the repository first, then run this script again.
-    pause
-    exit /b 0
-)
 
-echo.
+REM Configure git identity locally if not set
+git config user.name >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    git config user.name "%GITHUB_USER%"
+)
+git config user.email >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    git config user.email "%GITHUB_USER%@users.noreply.github.com"
+)
+git config core.autocrlf false >nul 2>nul
+
 echo Initializing Git repository...
-git init
-git branch -M main
+git init >nul 2>nul
+git branch -M main >nul 2>nul
 git add .
-git commit -m "Gravitation 2.0: RootHide Dopamine iOS 16.2 fix (no icon placement bugs, fixed widgets, iPhone 14 Pro Max support)"
-git remote remove origin 2>nul
+git commit -m "Gravitation 2.0: RootHide Dopamine iOS 16.2 fix (no icon placement bugs, fixed widgets, iPhone 14 Pro Max support)" >nul 2>nul
+git remote remove origin >nul 2>nul
 git remote add origin https://github.com/%GITHUB_USER%/Gravitation.git
 
 echo.
