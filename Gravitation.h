@@ -49,6 +49,7 @@
 - (void)startGravitySimulation;
 - (void)stopGravitySimulation;
 - (void)gravitation_handleToggleNotification;
+- (void)gravitation_handleRestoreNotification;
 @end
 
 @interface SBFolderController : NSObject
@@ -71,6 +72,7 @@
 @interface SBCoverSheetPresentationManager : NSObject
 + (instancetype)sharedInstance;
 - (BOOL)isVisible;
+- (BOOL)hasContentUnderCoverSheet;
 @end
 
 @interface SBLockScreenManager : NSObject

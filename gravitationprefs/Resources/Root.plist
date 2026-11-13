@@ -50,20 +50,7 @@
 			<key>PostNotification</key>
 			<string>me.kritanta.gravitationprefs/Prefs</string>
 		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
-			<key>defaults</key>
-			<string>me.kritanta.gravitationprefs</string>
-			<key>key</key>
-			<string>hapticFeedback</string>
-			<key>label</key>
-			<string>Haptic Feedback</string>
-			<key>PostNotification</key>
-			<string>me.kritanta.gravitationprefs/Prefs</string>
-		</dict>
+
 
 		<dict>
 			<key>cell</key>

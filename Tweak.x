@@ -15,8 +15,7 @@ static BOOL isTweakEnabled = YES;
 static BOOL isFingerGravityEnabled = YES;
 static BOOL shouldWidgetsFall = YES;
 static BOOL dynamicIslandCollision = YES;
-static BOOL hapticFeedbackEnabled = YES;
-static CGFloat bounciness = 0.55;
+static CGFloat bounciness = 0.35;
 
 // #pragma mark - Preferences Loading
 
@@ -25,8 +24,7 @@ static void loadPreferences(void) {
     isFingerGravityEnabled = YES;
     shouldWidgetsFall = YES;
     dynamicIslandCollision = YES;
-    hapticFeedbackEnabled = YES;
-    bounciness = 0.55;
+    bounciness = 0.35;
 
     CFPreferencesAppSynchronize(CFSTR("me.kritanta.gravitationprefs"));
 
@@ -43,9 +41,6 @@ static void loadPreferences(void) {
     bVal = CFPreferencesGetAppBooleanValue(CFSTR("dynamicIslandCollision"), CFSTR("me.kritanta.gravitationprefs"), &exists);
     if (exists) dynamicIslandCollision = bVal;
 
-    bVal = CFPreferencesGetAppBooleanValue(CFSTR("hapticFeedback"), CFSTR("me.kritanta.gravitationprefs"), &exists);
-    if (exists) hapticFeedbackEnabled = bVal;
-
     CFPropertyListRef bRef = CFPreferencesCopyAppValue(CFSTR("bounciness"), CFSTR("me.kritanta.gravitationprefs"));
     if (bRef) {
         if (CFGetTypeID(bRef) == CFNumberGetTypeID()) {
@@ -55,6 +50,50 @@ static void loadPreferences(void) {
         }
         CFRelease(bRef);
     }
+}
+
+// #pragma mark - Check if Home Screen is Currently Active
+
+static BOOL isHomeScreenVisible(void) {
+    // 1. If an application is currently frontmost, we are inside an app!
+    SpringBoard *sb = (SpringBoard *)[UIApplication sharedApplication];
+    if ([sb respondsToSelector:@selector(_accessibilityFrontMostApplication)]) {
+        if ([sb _accessibilityFrontMostApplication] != nil) {
+            return NO; // Inside an application, do NOT trigger!
+        }
+    }
+
+    // 2. If locked or screen is off, do NOT trigger
+    SBLockScreenManager *lockScreenMgr = [%c(SBLockScreenManager) sharedInstance];
+    if (lockScreenMgr) {
+        if ([lockScreenMgr respondsToSelector:@selector(isLockScreenVisible)] && [lockScreenMgr isLockScreenVisible]) {
+            return NO;
+        }
+        if ([lockScreenMgr respondsToSelector:@selector(isUILocked)] && [lockScreenMgr isUILocked]) {
+            return NO;
+        }
+    }
+
+    // 3. If CoverSheet / Notification Center is pulled down, do NOT trigger
+    id coverSheet = [%c(SBCoverSheetPresentationManager) sharedInstance];
+    if (coverSheet && [coverSheet respondsToSelector:@selector(hasContentUnderCoverSheet)]) {
+        if ([coverSheet hasContentUnderCoverSheet]) {
+            return NO;
+        }
+    }
+
+    // 4. Verify that the Home Screen window is visible
+    BOOL foundVisibleHomeWindow = NO;
+    for (UIWindow *win in [[UIApplication sharedApplication] windows]) {
+        if ([win isKindOfClass:%c(SBHomeScreenWindow)]) {
+            if (!win.hidden && win.alpha > 0.05) {
+                foundVisibleHomeWindow = YES;
+                break;
+            }
+        }
+    }
+
+    return foundVisibleHomeWindow;
 }
 
 // #pragma mark - Shake Trigger Handler
@@ -68,18 +107,9 @@ static void handleShakeTrigger(void) {
 
     if (!isTweakEnabled) return;
 
-    // Do not trigger if screen is locked or screen is off
-    SBLockScreenManager *lockScreenMgr = [%c(SBLockScreenManager) sharedInstance];
-    if (lockScreenMgr) {
-        if ([lockScreenMgr respondsToSelector:@selector(isLockScreenVisible)] && [lockScreenMgr isLockScreenVisible]) {
-            return;
-        }
-        if ([lockScreenMgr respondsToSelector:@selector(isUILocked)] && [lockScreenMgr isUILocked]) {
-            return;
-        }
-        if ([lockScreenMgr respondsToSelector:@selector(isScreenOn)] && ![lockScreenMgr isScreenOn]) {
-            return;
-        }
+    // CRITICAL: Only trigger when ON HOME SCREEN (no app open!)
+    if (!isHomeScreenVisible()) {
+        return;
     }
 
     // Do not trigger while editing icons (jiggle mode)
@@ -88,10 +118,7 @@ static void handleShakeTrigger(void) {
         return;
     }
 
-    // Provide haptic feedback on successful shake trigger
-    if (hapticFeedbackEnabled) {
-        AudioServicesPlaySystemSound(1519); // Crisp Peek haptic tap
-    }
+    // Completely silent - NO vibration, NO haptics!
 
     // Broadcast toggle event to active icon list view
     [[NSNotificationCenter defaultCenter] postNotificationName:@"GravitationToggleNotification" object:nil];
@@ -110,6 +137,11 @@ static void startHardwareShakeDetector(void) {
                                                     withHandler:^(CMAccelerometerData * _Nullable data, NSError * _Nullable error) {
             if (error || !data) return;
 
+            // Only evaluate shake if on Home Screen
+            if (!isHomeScreenVisible()) {
+                return;
+            }
+
             double x = data.acceleration.x;
             double y = data.acceleration.y;
             double z = data.acceleration.z;
@@ -123,18 +155,7 @@ static void startHardwareShakeDetector(void) {
     }
 }
 
-// #pragma mark - UIKit Motion Shake Hooks
-
-%hook UIWindow
-
-- (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
-    %orig;
-    if (motion == UIEventSubtypeMotionShake || (event && event.type == 1 && event.subtype == 1)) {
-        handleShakeTrigger();
-    }
-}
-
-%end
+// #pragma mark - UIKit Motion Shake Hook (Only Home Screen Window)
 
 %hook SBHomeScreenWindow
 
@@ -152,13 +173,6 @@ static void startHardwareShakeDetector(void) {
 - (void)applicationDidFinishLaunching:(id)application {
     %orig;
     startHardwareShakeDetector();
-}
-
-- (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
-    %orig;
-    if (motion == UIEventSubtypeMotionShake || (event && event.type == 1 && event.subtype == 1)) {
-        handleShakeTrigger();
-    }
 }
 
 %end
@@ -183,6 +197,10 @@ static void startHardwareShakeDetector(void) {
                                                  selector:@selector(gravitation_handleToggleNotification)
                                                      name:@"GravitationToggleNotification"
                                                    object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(gravitation_handleRestoreNotification)
+                                                     name:@"GravitationRestoreNotification"
+                                                   object:nil];
         objc_setAssociatedObject(self, "gravitation_observed", @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
 }
@@ -198,6 +216,10 @@ static void startHardwareShakeDetector(void) {
                                                  selector:@selector(gravitation_handleToggleNotification)
                                                      name:@"GravitationToggleNotification"
                                                    object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(gravitation_handleRestoreNotification)
+                                                     name:@"GravitationRestoreNotification"
+                                                   object:nil];
         objc_setAssociatedObject(self, "gravitation_observed", @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
 }
@@ -211,6 +233,7 @@ static void startHardwareShakeDetector(void) {
 
 - (void)dealloc {
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"GravitationToggleNotification" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"GravitationRestoreNotification" object:nil];
     %orig;
 }
 
@@ -248,6 +271,14 @@ static void startHardwareShakeDetector(void) {
     [self startGravitySimulation];
 }
 
+// Handler for when an app is launched (automatically restore icons cleanly)
+%new
+- (void)gravitation_handleRestoreNotification {
+    if (self.isGravitySimulating) {
+        [self stopGravitySimulation];
+    }
+}
+
 // Helper to disable parent page scroll view during gravity
 %new
 - (void)setPageScrollingEnabled:(BOOL)enabled {
@@ -261,7 +292,7 @@ static void startHardwareShakeDetector(void) {
     }
 }
 
-// #pragma mark - Start Gravity Simulation
+// #pragma mark - Start Gravity Simulation (Smooth, Fluid Gliding Motion)
 
 %new
 - (void)startGravitySimulation {
@@ -318,9 +349,9 @@ static void startHardwareShakeDetector(void) {
     UIDynamicAnimator *animator = [[UIDynamicAnimator alloc] initWithReferenceView:self];
     self.gravityAnimator = animator;
 
-    // 2. Gravity Behavior
+    // 2. Gravity Behavior (smooth, natural slide like original Gravitation)
     UIGravityBehavior *gravity = [[UIGravityBehavior alloc] initWithItems:fallingViews];
-    gravity.magnitude = 3.0;
+    gravity.magnitude = 1.0; // Natural 1.0g fall instead of abrupt drop
     [animator addBehavior:gravity];
     self.gravityBehavior = gravity;
 
@@ -346,11 +377,12 @@ static void startHardwareShakeDetector(void) {
     [animator addBehavior:collision];
     self.gravityCollisionBehavior = collision;
 
-    // 4. Dynamic Item Behavior (Bounciness & Mass)
+    // 4. Dynamic Item Behavior (Smooth Sliding Physics)
     UIDynamicItemBehavior *itemProps = [[UIDynamicItemBehavior alloc] initWithItems:fallingViews];
-    itemProps.elasticity = bounciness;
-    itemProps.friction = 0.22;
-    itemProps.resistance = 0.12;
+    itemProps.elasticity = bounciness;    // Soft, pleasant bounce (0.35)
+    itemProps.friction = 0.30;            // Gentle surface friction
+    itemProps.resistance = 0.45;          // Fluid air resistance so icons glide smoothly
+    itemProps.angularResistance = 0.50;   // Controlled, smooth rotation
     itemProps.allowsRotation = YES;
     [animator addBehavior:itemProps];
     self.gravityItemBehavior = itemProps;
@@ -364,9 +396,9 @@ static void startHardwareShakeDetector(void) {
         [mgr startDeviceMotionUpdatesToQueue:[NSOperationQueue mainQueue]
                                  withHandler:^(CMDeviceMotion * _Nullable motion, NSError * _Nullable error) {
             if (error || !motion || !weakSelf || !weakSelf.gravityBehavior) return;
-            // Real physical gravity mapping
-            CGFloat gx = motion.gravity.x * 3.5;
-            CGFloat gy = -motion.gravity.y * 3.5;
+            // Smooth, natural physics vector
+            CGFloat gx = motion.gravity.x * 1.2;
+            CGFloat gy = -motion.gravity.y * 1.2;
             weakSelf.gravityBehavior.gravityDirection = CGVectorMake(gx, gy);
         }];
     }
@@ -446,7 +478,7 @@ static void startHardwareShakeDetector(void) {
         CGPoint p = [touch locationInView:self];
         if (!self.gravityFingerBehavior) {
             UIFieldBehavior *field = [UIFieldBehavior radialGravityFieldWithPosition:p];
-            field.strength = 50.0;
+            field.strength = 35.0;
             field.minimumRadius = 80.0;
             field.falloff = 1.0;
             field.region = [UIRegion infiniteRegion];
@@ -470,7 +502,7 @@ static void startHardwareShakeDetector(void) {
         if (self.gravityFingerBehavior) {
             self.gravityFingerBehavior.position = p;
             if (touch.force > 0) {
-                self.gravityFingerBehavior.strength = 50.0 * (1.0 + touch.force);
+                self.gravityFingerBehavior.strength = 35.0 * (1.0 + touch.force);
             }
         }
         return;
@@ -494,15 +526,27 @@ static void startHardwareShakeDetector(void) {
 
 %end
 
-// #pragma mark - Prevent Icon Launches While Gravity Is Active
+// #pragma mark - Allow Tapping Icons to Open Apps
 
 %hook SBIconView
 
-- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
+- (void)_handleTap:(id)arg1 {
     if (isGlobalGravityActive) {
-        return NO;
+        // App is opening! Cleanly restore icons so the home screen is ready when returning
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"GravitationRestoreNotification" object:nil];
     }
-    return %orig;
+    %orig;
+}
+
+%end
+
+%hook SBIconController
+
+- (void)iconWasTapped:(id)arg1 {
+    if (isGlobalGravityActive) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"GravitationRestoreNotification" object:nil];
+    }
+    %orig;
 }
 
 %end
