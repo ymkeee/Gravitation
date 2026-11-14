@@ -428,12 +428,12 @@ static void startHardwareShakeDetector(void) {
     NSArray<UIView *> *viewsToRestore = [self.gravityFallingViews copy];
     self.gravityFallingViews = nil;
 
-    // 3. Smooth Spring Animation to EXACT original coordinates (FLAWLESS RESTORATION)
-    [UIView animateWithDuration:0.7
+    // 3. Smooth, graceful gliding animation to EXACT original coordinates
+    [UIView animateWithDuration:0.95
                           delay:0.0
-         usingSpringWithDamping:0.76
-          initialSpringVelocity:0.6
-                        options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionBeginFromCurrentState
+         usingSpringWithDamping:0.90
+          initialSpringVelocity:0.2
+                        options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionBeginFromCurrentState
                      animations:^{
         for (UIView *view in viewsToRestore) {
             NSValue *centerVal = objc_getAssociatedObject(view, kOriginalCenterKey);
