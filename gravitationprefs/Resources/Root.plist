@@ -16,11 +16,13 @@
 		</dict>
 		<dict>
 			<key>cellClass</key>
-			<string>KRTwitterCell</string>
+			<string>GRVGitHubCell</string>
+			<key>cell</key>
+			<string>PSStaticTextCell</string>
 			<key>label</key>
 			<string>ymkeee</string>
-			<key>accountName</key>
-			<string>ymkeee</string>
+			<key>icon</key>
+			<string>github.png</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -50,11 +52,22 @@
 			<key>PostNotification</key>
 			<string>me.kritanta.gravitationprefs/Prefs</string>
 		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Названия приложений / App Labels</string>
+			<key>footerText</key>
+			<string>Когда выключено, названия приложений видны, а хитбокс увеличен для защиты текста от наложений. Когда включено, названия скрываются и иконки прилегают вплотную без пустого промежутка.</string>
+			<key>isStaticText</key>
+			<true/>
+		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
-			<true/>
+			<false/>
 			<key>defaults</key>
 			<string>me.kritanta.gravitationprefs</string>
 			<key>key</key>
@@ -71,23 +84,9 @@
 			<key>label</key>
 			<string>Хитбоксы и преграды / Boundaries</string>
 			<key>footerText</key>
-			<string>Защита верхнего статус-бара: иконки отскакивают ниже времени и батареи и не наезжают на них.</string>
+			<string>Хитбоксы защищают часы, батарею и Dynamic Island сверху экрана: иконки отскакивают от них со всех сторон.</string>
 			<key>isStaticText</key>
 			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
-			<key>defaults</key>
-			<string>me.kritanta.gravitationprefs</string>
-			<key>key</key>
-			<string>statusBarCollision</string>
-			<key>label</key>
-			<string>Хитбокс статус-бара (время, батарея)</string>
-			<key>PostNotification</key>
-			<string>me.kritanta.gravitationprefs/Prefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -100,6 +99,20 @@
 			<string>dynamicIslandCollision</string>
 			<key>label</key>
 			<string>Хитбокс Dynamic Island</string>
+			<key>PostNotification</key>
+			<string>me.kritanta.gravitationprefs/Prefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>me.kritanta.gravitationprefs</string>
+			<key>key</key>
+			<string>statusBarCollision</string>
+			<key>label</key>
+			<string>Хитбоксы времени и батареи</string>
 			<key>PostNotification</key>
 			<string>me.kritanta.gravitationprefs/Prefs</string>
 		</dict>
