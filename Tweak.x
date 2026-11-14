@@ -428,12 +428,12 @@ static void startHardwareShakeDetector(void) {
     NSArray<UIView *> *viewsToRestore = [self.gravityFallingViews copy];
     self.gravityFallingViews = nil;
 
-    // 3. Original Gravitation return animation with signature spring bounce
-    [UIView animateWithDuration:1.0
+    // 3. Smooth, natural spring return animation with pleasant bounce (no jerk at the end)
+    [UIView animateWithDuration:0.85
                           delay:0.0
-         usingSpringWithDamping:0.8
-          initialSpringVelocity:5.0
-                        options:UIViewAnimationOptionCurveLinear | UIViewAnimationOptionBeginFromCurrentState
+         usingSpringWithDamping:0.76
+          initialSpringVelocity:0.0
+                        options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
                      animations:^{
         for (UIView *view in viewsToRestore) {
             NSValue *centerVal = objc_getAssociatedObject(view, kOriginalCenterKey);
@@ -461,12 +461,8 @@ static void startHardwareShakeDetector(void) {
         // Restore page scrolling
         [self setPageScrollingEnabled:YES];
 
-        // Safe native SpringBoard layout pass to guarantee system consistency
+        // Mark layout as clean without forcing an un-animated snap
         [self setNeedsLayout];
-        [self layoutIfNeeded];
-        if ([self respondsToSelector:@selector(layoutIconsNow)]) {
-            [self layoutIconsNow];
-        }
     }];
 }
 
