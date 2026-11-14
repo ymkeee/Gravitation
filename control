@@ -1,6 +1,6 @@
 Package: com.ymkeee.gravitation
 Name: Gravitation
-Version: 2.0.0
+Version: 2.1.0
 Architecture: iphoneos-arm64e
 Description: Shake your phone to drop icons with gravity! Shake again to restore with zero bugs. Re-engineered for iOS 16 RootHide Dopamine on iPhone 14 Pro Max.
 Maintainer: ymkeee
