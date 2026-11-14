@@ -13,14 +13,6 @@
 #define jbroot(path) (path)
 #endif
 
-#ifndef UIDynamicItemCollisionBoundsTypeDefined
-typedef NS_ENUM(NSUInteger, UIDynamicItemCollisionBoundsType) {
-    UIDynamicItemCollisionBoundsTypeRectangle = 0,
-    UIDynamicItemCollisionBoundsTypeEllipse = 1,
-    UIDynamicItemCollisionBoundsTypePath = 2
-};
-#endif
-
 @class SBIcon, SBIconView, SBIconListModel, SBFolderController, SBRootFolderController;
 
 @interface SBIcon : NSObject
@@ -30,14 +22,12 @@ typedef NS_ENUM(NSUInteger, UIDynamicItemCollisionBoundsType) {
 - (NSString *)displayName;
 @end
 
-@interface SBIconView : UIView <UIDynamicItem>
+@interface SBIconView : UIView
 @property (nonatomic, strong) SBIcon *icon;
 - (BOOL)isWidgetIcon;
 - (void)setIconLabelAlpha:(CGFloat)alpha;
 - (CGFloat)iconLabelAlpha;
 - (UIView *)labelView;
-- (UIDynamicItemCollisionBoundsType)collisionBoundsType;
-- (UIBezierPath *)collisionBoundingPath;
 @end
 
 @interface SBHWidgetContainerView : UIView

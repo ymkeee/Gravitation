@@ -234,14 +234,11 @@ static void startHardwareShakeDetector(void) {
 
 %hook SBIconView
 
-- (UIDynamicItemCollisionBoundsType)collisionBoundsType {
+- (NSUInteger)collisionBoundsType {
     if (isGlobalGravityActive) {
-        return UIDynamicItemCollisionBoundsTypePath;
+        return 2; // UIDynamicItemCollisionBoundsTypePath
     }
-    if ([%c(UIView) instancesRespondToSelector:@selector(collisionBoundsType)]) {
-        return %orig;
-    }
-    return UIDynamicItemCollisionBoundsTypeRectangle;
+    return 0; // UIDynamicItemCollisionBoundsTypeRectangle
 }
 
 - (UIBezierPath *)collisionBoundingPath {
@@ -261,9 +258,6 @@ static void startHardwareShakeDetector(void) {
             CGFloat pad = 8.0;
             return [UIBezierPath bezierPathWithRoundedRect:CGRectMake(-pad, 0.0, w + (pad * 2.0), h + 2.0) cornerRadius:14.0];
         }
-    }
-    if ([%c(UIView) instancesRespondToSelector:@selector(collisionBoundingPath)]) {
-        return %orig;
     }
     return [UIBezierPath bezierPathWithRect:self.bounds];
 }
