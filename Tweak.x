@@ -10,98 +10,45 @@ static BOOL isGlobalGravityActive = NO;
 static NSTimeInterval lastShakeTimestamp = 0.0;
 static CMMotionManager *hardwareShakeDetector = nil;
 
-// Preference domain and notification constants
-static NSString *const kPrefsDomain = @"me.kritanta.gravitationprefs";
-static NSString *const kPrefsChangedNotification = @"me.kritanta.gravitationprefs/Prefs";
-
-// Preferences variables
+// Preferences
 static BOOL isTweakEnabled = YES;
 static BOOL isFingerGravityEnabled = YES;
-static BOOL shouldHideLabels = NO; // Default NO: names stay visible with enlarged hitbox!
-static BOOL statusBarCollision = YES;
-static BOOL dynamicIslandCollision = YES;
-static BOOL dockBarrier = YES;
-static BOOL dockGravity = NO;
 static BOOL shouldWidgetsFall = YES;
+static BOOL dynamicIslandCollision = NO;
 static CGFloat bounciness = 0.35;
 
 // #pragma mark - Preferences Loading
 
-static BOOL getBoolPref(NSDictionary *dict, NSString *key, BOOL defaultVal) {
-    if (dict && dict[key] != nil) {
-        return [dict[key] boolValue];
-    }
-    Boolean exists = false;
-    Boolean val = CFPreferencesGetAppBooleanValue((__bridge CFStringRef)key, (__bridge CFStringRef)kPrefsDomain, &exists);
-    return exists ? (BOOL)val : defaultVal;
-}
-
 static void loadPreferences(void) {
     isTweakEnabled = YES;
     isFingerGravityEnabled = YES;
-    shouldHideLabels = NO;
-    statusBarCollision = YES;
-    dynamicIslandCollision = YES;
-    dockBarrier = YES;
-    dockGravity = NO;
     shouldWidgetsFall = YES;
+    dynamicIslandCollision = NO;
     bounciness = 0.35;
 
-    CFPreferencesAppSynchronize((__bridge CFStringRef)kPrefsDomain);
+    CFPreferencesAppSynchronize(CFSTR("me.kritanta.gravitationprefs"));
 
-    // Direct plist fallback to ensure compatibility across rootless and roothide
-    NSString *userPrefsPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Preferences/me.kritanta.gravitationprefs.plist"];
-    NSDictionary *prefsDict = [NSDictionary dictionaryWithContentsOfFile:userPrefsPath];
-    if (!prefsDict) {
-        prefsDict = [NSDictionary dictionaryWithContentsOfFile:@"/var/mobile/Library/Preferences/me.kritanta.gravitationprefs.plist"];
-    }
+    Boolean exists = false;
+    Boolean bVal = CFPreferencesGetAppBooleanValue(CFSTR("tweakEnabled"), CFSTR("me.kritanta.gravitationprefs"), &exists);
+    if (exists) isTweakEnabled = bVal;
 
-    isTweakEnabled = getBoolPref(prefsDict, @"tweakEnabled", YES);
-    isFingerGravityEnabled = getBoolPref(prefsDict, @"fingerGravity", YES);
-    shouldHideLabels = getBoolPref(prefsDict, @"hideLabels", NO);
-    statusBarCollision = getBoolPref(prefsDict, @"statusBarCollision", YES);
-    dynamicIslandCollision = getBoolPref(prefsDict, @"dynamicIslandCollision", YES);
-    dockBarrier = getBoolPref(prefsDict, @"dockBarrier", YES);
-    dockGravity = getBoolPref(prefsDict, @"dockGravity", NO);
-    shouldWidgetsFall = getBoolPref(prefsDict, @"widgetsFall", YES);
+    bVal = CFPreferencesGetAppBooleanValue(CFSTR("fingerGravity"), CFSTR("me.kritanta.gravitationprefs"), &exists);
+    if (exists) isFingerGravityEnabled = bVal;
 
-    if (prefsDict && prefsDict[@"bounciness"] != nil) {
-        bounciness = [prefsDict[@"bounciness"] doubleValue];
-    } else {
-        CFPropertyListRef bRef = CFPreferencesCopyAppValue(CFSTR("bounciness"), (__bridge CFStringRef)kPrefsDomain);
-        if (bRef) {
-            if (CFGetTypeID(bRef) == CFNumberGetTypeID()) {
-                bounciness = [(__bridge NSNumber *)bRef doubleValue];
-            }
-            CFRelease(bRef);
+    bVal = CFPreferencesGetAppBooleanValue(CFSTR("widgetsFall"), CFSTR("me.kritanta.gravitationprefs"), &exists);
+    if (exists) shouldWidgetsFall = bVal;
+
+    bVal = CFPreferencesGetAppBooleanValue(CFSTR("dynamicIslandCollision"), CFSTR("me.kritanta.gravitationprefs"), &exists);
+    if (exists) dynamicIslandCollision = bVal;
+
+    CFPropertyListRef bRef = CFPreferencesCopyAppValue(CFSTR("bounciness"), CFSTR("me.kritanta.gravitationprefs"));
+    if (bRef) {
+        if (CFGetTypeID(bRef) == CFNumberGetTypeID()) {
+            bounciness = [(__bridge NSNumber *)bRef doubleValue];
+            if (bounciness < 0.0) bounciness = 0.0;
+            if (bounciness > 1.0) bounciness = 1.0;
         }
-    }
-    if (bounciness < 0.0) bounciness = 0.0;
-    if (bounciness > 1.0) bounciness = 1.0;
-}
-
-// #pragma mark - App Label Visibility Helper
-
-static void setIconLabelsHidden(UIView *view, BOOL hidden, BOOL animated) {
-    void (^applyAlpha)(void) = ^{
-        if ([view respondsToSelector:@selector(setIconLabelAlpha:)]) {
-            [(SBIconView *)view setIconLabelAlpha:(hidden ? 0.0 : 1.0)];
-        }
-        for (UIView *sub in view.subviews) {
-            NSString *cls = NSStringFromClass([sub class]);
-            if ([cls containsString:@"Label"] || [cls containsString:@"Legibility"]) {
-                sub.alpha = hidden ? 0.0 : 1.0;
-            }
-        }
-    };
-    if (animated) {
-        [UIView animateWithDuration:0.35
-                              delay:0.0
-                            options:UIViewAnimationOptionCurveEaseInOut
-                         animations:applyAlpha
-                         completion:nil];
-    } else {
-        applyAlpha();
+        CFRelease(bRef);
     }
 }
 
@@ -230,59 +177,6 @@ static void startHardwareShakeDetector(void) {
 
 %end
 
-// #pragma mark - SBIconView Hook (Collision Shape & App Launch)
-
-%hook SBIconView
-
-- (NSUInteger)collisionBoundsType {
-    if (isGlobalGravityActive) {
-        return 2; // UIDynamicItemCollisionBoundsTypePath
-    }
-    return 0; // UIDynamicItemCollisionBoundsTypeRectangle
-}
-
-- (UIBezierPath *)collisionBoundingPath {
-    if (isGlobalGravityActive) {
-        CGRect b = self.bounds;
-        CGFloat w = b.size.width;
-        CGFloat h = b.size.height;
-
-        if (shouldHideLabels) {
-            // When labels are hidden: Hitbox is EXACTLY the square icon image (w x w)
-            // This completely ELIMINATES the empty 30pt gap below icons!
-            return [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0.0, 0.0, w, w) cornerRadius:14.0];
-        } else {
-            // When labels are visible: ENLARGED HITBOX!
-            // Add comfortable horizontal padding so the label text is fully enclosed within the hitbox!
-            // Adjacent icons cannot touch the label text, preventing overlap.
-            CGFloat pad = 8.0;
-            return [UIBezierPath bezierPathWithRoundedRect:CGRectMake(-pad, 0.0, w + (pad * 2.0), h + 2.0) cornerRadius:14.0];
-        }
-    }
-    return [UIBezierPath bezierPathWithRect:self.bounds];
-}
-
-- (void)_handleTap:(id)arg1 {
-    if (isGlobalGravityActive) {
-        // App is opening! Cleanly restore icons so the home screen is ready when returning
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"GravitationRestoreNotification" object:nil];
-    }
-    %orig;
-}
-
-%end
-
-%hook SBIconController
-
-- (void)iconWasTapped:(id)arg1 {
-    if (isGlobalGravityActive) {
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"GravitationRestoreNotification" object:nil];
-    }
-    %orig;
-}
-
-%end
-
 // #pragma mark - SBIconListView Hook
 
 %hook SBIconListView
@@ -357,25 +251,23 @@ static void startHardwareShakeDetector(void) {
         return;
     }
 
-    // Handle Dock icon list view
+    // Exclude the Dock (dock remains a solid base)
     if ([self isKindOfClass:%c(SBDockIconListView)]) {
-        if (!dockGravity) {
-            return; // Dock gravity is disabled by user in settings
-        }
-    } else {
-        // Normal page list view: check if currently visible on screen (not an offscreen page)
-        CGRect screenBounds = [UIScreen mainScreen].bounds;
-        CGRect frameInWindow = [self convertRect:self.bounds toView:nil];
-        if (frameInWindow.origin.x < -60 || frameInWindow.origin.x > screenBounds.size.width - 60) {
-            return; // Offscreen page in horizontal scroll view
-        }
-    }
-
-    if (self.bounds.size.width < 50 || self.bounds.size.height < 50) {
         return;
     }
 
-    // Start gravity on this visible icon list
+    // Check if view is currently visible on screen (not an offscreen page)
+    CGRect screenBounds = [UIScreen mainScreen].bounds;
+    CGRect frameInWindow = [self convertRect:self.bounds toView:nil];
+    if (frameInWindow.origin.x < -60 || frameInWindow.origin.x > screenBounds.size.width - 60) {
+        return; // Offscreen page in horizontal scroll view
+    }
+
+    if (self.bounds.size.width < 100 || self.bounds.size.height < 100) {
+        return;
+    }
+
+    // Start gravity on the currently visible page
     [self startGravitySimulation];
 }
 
@@ -441,33 +333,6 @@ static void startHardwareShakeDetector(void) {
         } else {
             // Falls with full gravity physics
             [fallingViews addObject:subview];
-
-            if (isIconView) {
-                CGFloat origW = subview.bounds.size.width;
-                CGFloat origH = subview.bounds.size.height;
-
-                if (shouldHideLabels) {
-                    // When labels are hidden: set bounds to square icon (origW x origW)
-                    // ZERO GAP between icons: icons touch edge to edge!
-                    setIconLabelsHidden(subview, YES, YES);
-                    subview.bounds = CGRectMake(0.0, 0.0, origW, origW);
-                } else {
-                    // When labels are visible: ENLARGE HITBOX to fully encompass the text!
-                    CGFloat labelMaxY = origH;
-                    CGFloat labelMaxW = origW;
-                    for (UIView *s in subview.subviews) {
-                        NSString *cls = NSStringFromClass([s class]);
-                        if ([cls containsString:@"Label"] || [cls containsString:@"Legibility"]) {
-                            labelMaxY = MAX(labelMaxY, CGRectGetMaxY(s.frame));
-                            labelMaxW = MAX(labelMaxW, s.frame.size.width);
-                        }
-                    }
-                    CGFloat fullH = MAX(labelMaxY + 5.0, origW + 28.0);
-                    CGFloat fullW = MAX(origW + 14.0, labelMaxW + 6.0);
-                    CGFloat originX = -(fullW - origW) / 2.0;
-                    subview.bounds = CGRectMake(originX, 0.0, fullW, fullH);
-                }
-            }
         }
     }
 
@@ -495,97 +360,12 @@ static void startHardwareShakeDetector(void) {
     collision.translatesReferenceBoundsIntoBoundary = YES;
     collision.collisionMode = UICollisionBehaviorModeEverything;
 
+    // iPhone 14 Pro Max: Dynamic Island Boundary
     CGFloat screenW = self.bounds.size.width;
-    CGFloat screenH = self.bounds.size.height;
-    CGRect screenBounds = [UIScreen mainScreen].bounds;
-
-    // Only apply top status bar and dock barriers to regular home screen pages (not inside dock itself)
-    if (![self isKindOfClass:%c(SBDockIconListView)]) {
-        // DYNAMIC ISLAND HITBOX (iPhone 14 Pro / 14 Pro Max / 15 / 16)
-        if (dynamicIslandCollision && screenBounds.size.width >= 375.0) {
-            CGFloat diWidth = 126.0;
-            CGFloat diHeight = 37.0;
-            CGFloat diX = (screenBounds.size.width - diWidth) / 2.0;
-            CGFloat diY = 11.0;
-
-            CGPoint pTL = [self convertPoint:CGPointMake(diX, diY) fromView:nil];
-            CGPoint pTR = [self convertPoint:CGPointMake(diX + diWidth, diY) fromView:nil];
-            CGPoint pBL = [self convertPoint:CGPointMake(diX, diY + diHeight) fromView:nil];
-            CGPoint pBR = [self convertPoint:CGPointMake(diX + diWidth, diY + diHeight) fromView:nil];
-
-            // 4 solid boundary edges around Dynamic Island
-            [collision addBoundaryWithIdentifier:@"DIBottom" fromPoint:pBL toPoint:pBR];
-            [collision addBoundaryWithIdentifier:@"DITop" fromPoint:pTL toPoint:pTR];
-            [collision addBoundaryWithIdentifier:@"DILeft" fromPoint:pTL toPoint:pBL];
-            [collision addBoundaryWithIdentifier:@"DIRight" fromPoint:pTR toPoint:pBR];
-
-            // Also add rounded capsule path
-            CGRect diRect = CGRectMake(pTL.x, pTL.y, diWidth, diHeight);
-            UIBezierPath *diPath = [UIBezierPath bezierPathWithRoundedRect:diRect cornerRadius:18.5];
-            [collision addBoundaryWithIdentifier:@"DIPill" forPath:diPath];
-        }
-
-        // TOP STATUS BAR HITBOXES (Protects Clock on top-left and Battery on top-right)
-        if (statusBarCollision) {
-            CGFloat timeW = 115.0;
-            CGFloat timeH = 54.0;
-            CGPoint tTL = [self convertPoint:CGPointMake(0.0, 0.0) fromView:nil];
-            CGPoint tTR = [self convertPoint:CGPointMake(timeW, 0.0) fromView:nil];
-            CGPoint tBL = [self convertPoint:CGPointMake(-50.0, timeH) fromView:nil];
-            CGPoint tBR = [self convertPoint:CGPointMake(timeW, timeH) fromView:nil];
-
-            [collision addBoundaryWithIdentifier:@"TimeBottom" fromPoint:tBL toPoint:tBR];
-            [collision addBoundaryWithIdentifier:@"TimeRight" fromPoint:tTR toPoint:tBR];
-
-            CGFloat battW = 115.0;
-            CGFloat battH = 54.0;
-            CGPoint bTL = [self convertPoint:CGPointMake(screenBounds.size.width - battW, 0.0) fromView:nil];
-            CGPoint bBL = [self convertPoint:CGPointMake(screenBounds.size.width - battW, battH) fromView:nil];
-            CGPoint bBR = [self convertPoint:CGPointMake(screenBounds.size.width + 50.0, battH) fromView:nil];
-
-            [collision addBoundaryWithIdentifier:@"BatteryBottom" fromPoint:bBL toPoint:bBR];
-            [collision addBoundaryWithIdentifier:@"BatteryLeft" fromPoint:bTL toPoint:bBL];
-        }
-
-        // DOCK BARRIER (Floor barrier vs falling behind dock)
-        CGFloat dockTopInView = screenH;
-        SBIconController *ic = [%c(SBIconController) sharedInstance];
-        UIView *dockView = nil;
-        if (ic && [ic respondsToSelector:@selector(rootFolderController)]) {
-            SBRootFolderController *rfc = [ic rootFolderController];
-            if (rfc) {
-                SBIconListView *dockList = nil;
-                if ([rfc respondsToSelector:@selector(dockIconListView)]) {
-                    dockList = [rfc dockIconListView];
-                } else if ([rfc respondsToSelector:@selector(dockListView)]) {
-                    dockList = [rfc dockListView];
-                }
-                if (dockList) dockView = dockList.superview ?: dockList;
-            }
-        }
-
-        if (dockView && dockView.window) {
-            CGRect dockFrameInWindow = [dockView convertRect:dockView.bounds toView:nil];
-            CGRect dockFrameInList = [self convertRect:dockFrameInWindow fromView:nil];
-            dockTopInView = dockFrameInList.origin.y - 18.0;
-        } else {
-            CGPoint fallbackPt = [self convertPoint:CGPointMake(0, screenBounds.size.height - 138.0) fromView:nil];
-            dockTopInView = fallbackPt.y;
-        }
-
-        if (dockBarrier) {
-            // Solid floor: icons bounce on top of the dock and do NOT fall behind it
-            [collision addBoundaryWithIdentifier:@"DockBarrierFloor"
-                                       fromPoint:CGPointMake(-100.0, dockTopInView)
-                                         toPoint:CGPointMake(screenW + 100.0, dockTopInView)];
-        } else {
-            // Allow icons to fall behind the dock to the bottom of the screen
-            CGPoint screenBottomPt = [self convertPoint:CGPointMake(0, screenBounds.size.height) fromView:nil];
-            CGFloat actualBottom = MAX(screenH, screenBottomPt.y);
-            [collision addBoundaryWithIdentifier:@"ScreenBottomBehindDock"
-                                       fromPoint:CGPointMake(-100.0, actualBottom)
-                                         toPoint:CGPointMake(screenW + 100.0, actualBottom)];
-        }
+    if (dynamicIslandCollision && screenW >= 375.0) {
+        CGRect islandRect = CGRectMake((screenW - 126.0) / 2.0, 11.0, 126.0, 37.0);
+        UIBezierPath *islandPath = [UIBezierPath bezierPathWithRoundedRect:islandRect cornerRadius:18.5];
+        [collision addBoundaryWithIdentifier:@"DynamicIsland" forPath:islandPath];
     }
 
     // Static widget obstacle boundaries (if widgets fall option is disabled)
@@ -665,20 +445,13 @@ static void startHardwareShakeDetector(void) {
             if (boundsVal) {
                 view.bounds = [boundsVal CGRectValue];
             }
-            // Smoothly fade labels back in as icons return to original spots
-            if (shouldHideLabels) {
-                setIconLabelsHidden(view, NO, NO);
-            }
         }
     } completion:^(BOOL finished) {
-        // Clean up associated memory and guarantee 100% label alpha
+        // Clean up associated memory
         for (UIView *view in viewsToRestore) {
             objc_setAssociatedObject(view, kOriginalCenterKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
             objc_setAssociatedObject(view, kOriginalTransformKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
             objc_setAssociatedObject(view, kOriginalBoundsKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-            if (shouldHideLabels) {
-                setIconLabelsHidden(view, NO, NO);
-            }
         }
 
         self.gravityAnimator = nil;
@@ -749,6 +522,31 @@ static void startHardwareShakeDetector(void) {
 
 %end
 
+// #pragma mark - Allow Tapping Icons to Open Apps
+
+%hook SBIconView
+
+- (void)_handleTap:(id)arg1 {
+    if (isGlobalGravityActive) {
+        // App is opening! Cleanly restore icons so the home screen is ready when returning
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"GravitationRestoreNotification" object:nil];
+    }
+    %orig;
+}
+
+%end
+
+%hook SBIconController
+
+- (void)iconWasTapped:(id)arg1 {
+    if (isGlobalGravityActive) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"GravitationRestoreNotification" object:nil];
+    }
+    %orig;
+}
+
+%end
+
 // #pragma mark - Constructor
 
 %ctor {
@@ -758,7 +556,7 @@ static void startHardwareShakeDetector(void) {
         CFNotificationCenterGetDarwinNotifyCenter(),
         NULL,
         (CFNotificationCallback)loadPreferences,
-        (__bridge CFStringRef)kPrefsChangedNotification,
+        CFSTR("me.kritanta.gravitationprefs/Prefs"),
         NULL,
         CFNotificationSuspensionBehaviorDeliverImmediately
     );
@@ -766,5 +564,5 @@ static void startHardwareShakeDetector(void) {
     // Initialize the hardware shake detector
     startHardwareShakeDetector();
 
-    NSLog(@"[Gravitation] Loaded successfully with PreferenceLoader support for iOS 16 (RootHide & Rootless)");
+    NSLog(@"[Gravitation] Loaded successfully for Dopamine RootHide (iOS 16.2)");
 }

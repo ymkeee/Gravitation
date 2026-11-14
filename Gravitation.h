@@ -25,9 +25,6 @@
 @interface SBIconView : UIView
 @property (nonatomic, strong) SBIcon *icon;
 - (BOOL)isWidgetIcon;
-- (void)setIconLabelAlpha:(CGFloat)alpha;
-- (CGFloat)iconLabelAlpha;
-- (UIView *)labelView;
 @end
 
 @interface SBHWidgetContainerView : UIView
@@ -53,9 +50,6 @@
 - (void)stopGravitySimulation;
 - (void)gravitation_handleToggleNotification;
 - (void)gravitation_handleRestoreNotification;
-@end
-
-@interface SBDockIconListView : SBIconListView
 @end
 
 @interface SBFolderController : NSObject

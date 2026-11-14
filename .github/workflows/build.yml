@@ -63,12 +63,6 @@ jobs:
         
         echo "=== Built Packages ==="
         ls -lah dist/
-
-        echo "=== Package Verification ==="
-        for deb in dist/*.deb; do
-          echo "Package: $deb"
-          ar -t "$deb" || true
-        done
     
     - name: Upload .deb artifacts
       uses: actions/upload-artifact@v4
@@ -99,19 +93,20 @@ jobs:
           
           ---
           
-          ### ✨ Что нового в v${{ steps.get_version.outputs.version }}:
-          - 🔲 **Полное удаление зазора при скрытых названиях:** При включении опции скрытия текста хитбокс обрезается ровно до квадрата значка (60×60 pt) — иконки прилегают вплотную друг к другу (впритык, 0 зазор).
-          - 🛡 **Полноценный объемный хитбокс для названий:** Когда названия включены, хитбокс охватывает иконку и подпись со всех сторон (90×76 pt) — названия больше не наезжают на другие иконки и не срезаются.
-          - 🛑 **Защита от скрытия за доком:** Поднят барьер пола дока — иконки и подписи аккуратно стоят сверху над доком и не прячутся за полупрозрачным стеклом.
-          - 🐙 **Профиль ymkeee на GitHub:** В Настройках прямая ссылка на профиль автора на GitHub.
-          - 🔄 **Прямое обновление в Sileo:** Повышена версия до 2.4.0 для обновления в один клик.
+          ### ✨ Features & Fixes:
+          - **Dual Environment:** Native packages for both RootHide and Rootless.
+          - **Zero Placement Bugs:** Pre-physics grid coordinates are preserved and restored with absolute precision.
+          - **Smooth Gliding Animation:** Icons slide smoothly across the screen with natural physics.
+          - **Organic Bounce:** Gentle spring bounce on return without any twitching at the end.
+          - **Full Widget Support:** Interactive widgets (2x2, 2x4, 4x4) tumble with real mass or stay as solid platforms.
+          - **App Launch on Tap:** Tap any icon while falling to open apps immediately.
+          - **Home Screen Only:** Completely ignores shakes inside open apps or on the Lock Screen.
+          - **Silent:** Zero unwanted vibrations or sounds.
           
-          ---
-          
-          ### 📲 Установка / Installation:
+          ### 📲 Installation:
           1. Скачайте нужный `.deb` ниже (**roothide** для RootHide или **rootless** для Rootless).
           2. Откройте в **Sileo**, **Zebra** или **Filza**.
-          3. Нажмите **«Обновить»** (или **«Установить»**).
+          3. Нажмите **«Установить»** или **«Обновить»**.
           4. Сделайте быстрый респринг (*Respring*).
         files: dist/*.deb
         draft: false

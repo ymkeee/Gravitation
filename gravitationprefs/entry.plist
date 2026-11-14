@@ -8,6 +8,8 @@
 		<string>GravitationPrefs</string>
 		<key>cell</key>
 		<string>PSLinkCell</string>
+		<key>cellClass</key>
+		<string>PSGravityLinkCell</string>
 		<key>detail</key>
 		<string>GRVRootListController</string>
 		<key>icon</key>
