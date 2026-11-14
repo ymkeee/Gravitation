@@ -8,9 +8,9 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>General Settings</string>
+			<string>Основные настройки / General</string>
 			<key>footerText</key>
-			<string>Shake your iPhone to drop icons with real gravity physics. Shake again to restore them smoothly to their exact places.</string>
+			<string>Встряхните iPhone на рабочем столе, чтобы запустить гравитацию. Встряхните снова, чтобы плавно вернуть все иконки на места.</string>
 			<key>isStaticText</key>
 			<true/>
 		</dict>
@@ -32,7 +32,7 @@
 			<key>key</key>
 			<string>tweakEnabled</string>
 			<key>label</key>
-			<string>Gravitation Enabled</string>
+			<string>Включить Gravitation</string>
 			<key>PostNotification</key>
 			<string>me.kritanta.gravitationprefs/Prefs</string>
 		</dict>
@@ -46,19 +46,32 @@
 			<key>key</key>
 			<string>fingerGravity</string>
 			<key>label</key>
-			<string>Finger Gravity</string>
+			<string>Притяжение к пальцу</string>
 			<key>PostNotification</key>
 			<string>me.kritanta.gravitationprefs/Prefs</string>
 		</dict>
-
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>me.kritanta.gravitationprefs</string>
+			<key>key</key>
+			<string>hideLabels</string>
+			<key>label</key>
+			<string>Скрывать названия иконок</string>
+			<key>PostNotification</key>
+			<string>me.kritanta.gravitationprefs/Prefs</string>
+		</dict>
 
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Widgets &amp; Screen Elements</string>
+			<string>Хитбоксы и преграды / Boundaries</string>
 			<key>footerText</key>
-			<string>When "Falling Widgets" is ON, widgets fall and tumble along with icons. When OFF, widgets stay in place as solid platforms that icons bounce off of.</string>
+			<string>Защита верхнего статус-бара: иконки отскакивают ниже времени и батареи и не наезжают на них.</string>
 			<key>isStaticText</key>
 			<true/>
 		</dict>
@@ -70,9 +83,9 @@
 			<key>defaults</key>
 			<string>me.kritanta.gravitationprefs</string>
 			<key>key</key>
-			<string>widgetsFall</string>
+			<string>statusBarCollision</string>
 			<key>label</key>
-			<string>Falling Widgets</string>
+			<string>Хитбокс статус-бара (время, батарея)</string>
 			<key>PostNotification</key>
 			<string>me.kritanta.gravitationprefs/Prefs</string>
 		</dict>
@@ -86,7 +99,21 @@
 			<key>key</key>
 			<string>dynamicIslandCollision</string>
 			<key>label</key>
-			<string>Dynamic Island Collision</string>
+			<string>Хитбокс Dynamic Island</string>
+			<key>PostNotification</key>
+			<string>me.kritanta.gravitationprefs/Prefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>me.kritanta.gravitationprefs</string>
+			<key>key</key>
+			<string>widgetsFall</string>
+			<key>label</key>
+			<string>Падение виджетов</string>
 			<key>PostNotification</key>
 			<string>me.kritanta.gravitationprefs/Prefs</string>
 		</dict>
@@ -95,9 +122,48 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Icon Bounciness</string>
+			<string>Нижний док-бар / Dock</string>
 			<key>footerText</key>
-			<string>Adjust elasticity of collisions.</string>
+			<string>«Барьер дока»: когда включен, иконки отскакивают от верхнего края дока. Когда выключен, иконки падают за док до самого низа экрана.</string>
+			<key>isStaticText</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>me.kritanta.gravitationprefs</string>
+			<key>key</key>
+			<string>dockBarrier</string>
+			<key>label</key>
+			<string>Барьер дока (не падать за док)</string>
+			<key>PostNotification</key>
+			<string>me.kritanta.gravitationprefs/Prefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>me.kritanta.gravitationprefs</string>
+			<key>key</key>
+			<string>dockGravity</string>
+			<key>label</key>
+			<string>Гравитация иконок в доке</string>
+			<key>PostNotification</key>
+			<string>me.kritanta.gravitationprefs/Prefs</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Упругость отскока / Bounciness</string>
+			<key>footerText</key>
+			<string>Настройте силу и мягкость отскока иконок при столкновениях.</string>
 			<key>isStaticText</key>
 			<true/>
 		</dict>
@@ -105,7 +171,7 @@
 			<key>cell</key>
 			<string>PSSliderCell</string>
 			<key>default</key>
-			<real>0.55</real>
+			<real>0.35</real>
 			<key>defaults</key>
 			<string>me.kritanta.gravitationprefs</string>
 			<key>key</key>
@@ -124,9 +190,9 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>About &amp; Support</string>
+			<string>О твике / About</string>
 			<key>footerText</key>
-			<string>Gravitation RootHide Edition for iOS 16</string>
+			<string>Gravitation iOS 16 RootHide &amp; Rootless Edition by ymkeee</string>
 			<key>isStaticText</key>
 			<true/>
 		</dict>
@@ -136,19 +202,9 @@
 			<key>cell</key>
 			<string>PSStaticTextCell</string>
 			<key>label</key>
-			<string>Original Source Code</string>
+			<string>Исходный код на GitHub</string>
 			<key>icon</key>
 			<string>github.png</string>
-		</dict>
-		<dict>
-			<key>cellClass</key>
-			<string>GravDonationLinkCell</string>
-			<key>cell</key>
-			<string>PSStaticTextCell</string>
-			<key>label</key>
-			<string>Donate</string>
-			<key>icon</key>
-			<string>paypal.png</string>
 		</dict>
 	</array>
 	<key>title</key>

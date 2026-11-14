@@ -27,30 +27,34 @@
 
 ---
 
-### ✨ Особенности и исправления:
+### ✨ Особенности и новые функции:
 
-* 📱 **Реальная физика гравитации:** Встряхните телефон на рабочем столе, чтобы иконки упали. Наклоняйте устройство — иконки плавно скользят под действием реального акселерометра и гироскопа.
-* 🧲 **Плавное возвращение на место:** Встряхните телефон снова — иконки мягко возвращаются в свои ячейки с естественным пружинящим отскоком без единого дёргания.
-* 🎯 **100% точное восстановление сетки:** Никаких смещений и перепутанных иконок! Координаты каждого элемента фиксируются с точностью до пикселя перед падением.
-* 🧩 **Полная поддержка виджетов iOS 14–16:** Виджеты (2×2, 2×4, 4×4) больше не ломают сетку:
-  * *Падение виджетов:* виджеты падают вместе с иконками с учётом своего реального размера и массы.
-  * *Виджеты как платформы:* виджеты остаются на месте как твёрдые препятствия, от которых отскакивают иконки.
-* 👆 **Гравитация пальца (Finger Gravity):** Коснитесь экрана, чтобы притянуть иконки к пальцу, словно магнитом.
-* 🚀 **Запуск приложений по нажатию:** Нажмите на любую падающую иконку, чтобы сразу открыть приложение.
-* 🔒 **Работа ТОЛЬКО на рабочем столе:** Твик полностью игнорирует встряску внутри приложений (Telegram, Safari и др.) и на экране блокировки.
-* 🏝 **Отскок от Dynamic Island:** На iPhone 14 Pro Max иконки физически отскакивают от Dynamic Island.
-* 🔇 **Абсолютная тишина:** Полностью отключены нежелательные вибрации и звуки.
+* ⚙️ **Полноценная панель в Настройках iOS (PreferenceLoader):** Твик появляется в Настройках со своей собственной иконкой и полным набором переключателей.
+* 🏷 **Никакого наезжающего текста:** Названия приложений временно скрываются во время падения, поэтому повернутые подписи больше не залезают на соседние иконки, а при возвращении плавно появляются снова.
+* ⏰ **Защита статус-бара (время и батарея):** Верхняя граница отталкивает иконки ниже строки состояния (54 pt), не давая перекрывать часы, батарею и индикатор связи.
+* 🏝 **Хитбокс Dynamic Island:** Физический отскок от Dynamic Island на iPhone 14 Pro Max.
+* 📥 **Управление падением за док (Dock Barrier):** 
+  * *Включено:* док работает как твёрдый пол, иконки прыгают на нём.
+  * *Выключено:* иконки падают за док до самого низа экрана.
+* 📱 **Гравитация иконок в доке:** Возможность включить падение для иконок нижнего дока (Телефон, Safari, Сообщения, Музыка).
+* 🧲 **Плавное возвращение на место:** При повторной встряске иконки мягко возвращаются в свои исходные ячейки с приятным пружинящим эффектом без рывков.
+* 🎯 **100% точное восстановление сетки:** Координаты каждого значка и виджета сохраняются перед падением и восстанавливаются пиксель в пиксель.
+* 🧩 **Полная поддержка виджетов:** Виджеты (2×2, 2×4, 4×4) могут либо падать, либо оставаться неподвижными твёрдыми платформами.
+* 👆 **Притяжение пальцем (Finger Gravity):** Коснитесь экрана, чтобы притянуть иконки к пальцу словно магнитом.
+* 🚀 **Запуск приложений по нажатию:** Нажмите на любую падающую иконку, чтобы мгновенно открыть приложение.
+* 🔒 **Работа ТОЛЬКО на рабочем столе:** Твик полностью игнорирует встряску внутри открытых приложений и на экране блокировки.
+* 🔇 **Абсолютная тишина:** Никаких лишних вибраций и звуков.
 
 ---
 
-### 📲 Как установить:
+### 📲 Как установить / обновить:
 
 1. Перейдите в раздел **[Releases](https://github.com/ymkeee/Gravitation/releases/latest)**.
-2. Выберите подходящий файл:
+2. Скачайте нужный файл:
    * **`com.ymkeee.gravitation_X.X.X_roothide.deb`** — если у вас **RootHide**.
    * **`com.ymkeee.gravitation_X.X.X_rootless.deb`** — если у вас обычный **Rootless**.
 3. Откройте скачанный файл через **Sileo**, **Zebra** или **Filza**.
-4. Нажмите **«Установить»** (или **«Обновить»**).
+4. Нажмите **«Обновить»** (или **«Установить»**).
 5. Сделайте быстрый респринг (*Respring*).
 
 ---
@@ -66,17 +70,21 @@
 
 ---
 
-### ✨ Features & Bug Fixes:
+### ✨ Features & Settings:
 
-* 📱 **Realistic Physics & Gyro:** Shake your device on the Home Screen to unhinge icons. Tilt your iPhone in any direction to watch icons slide smoothly with true device gravity.
-* 🧲 **Smooth Gliding Return:** Shake again to smoothly return icons to their grid slots with a lively, organic spring bounce and zero twitching at the end.
-* 🎯 **Pixel-Perfect Grid Restoration:** Eliminates all placement bugs from older versions. Pre-physics coordinates are preserved and restored with absolute precision.
-* 🧩 **Full WidgetKit Support:** iOS 14–16 modern widgets (small, medium, large) are completely supported (falling mode or solid platform mode).
-* 👆 **Finger Gravity:** Touch and drag across the screen to create a radial gravitational attractor pulling icons toward your fingertip.
-* 🚀 **Tap to Launch Apps:** Tap any icon while it is falling to immediately launch the app.
-* 🔒 **Home Screen Only:** Completely ignores shakes inside open applications or on the Lock Screen.
-* 🏝 **Dynamic Island Collisions:** iPhone 14 Pro Max Dynamic Island bounds act as a solid collision obstacle.
-* 🔇 **Silent & Clean:** No unwanted haptics or vibration clicks.
+* ⚙️ **iOS Settings Integration (PreferenceLoader):** Access Gravitation directly from the iOS Settings app with dedicated toggles.
+* 🏷 **No Overlapping Labels:** App title labels are smoothly hidden during fall so rotated labels do not clutter or overlap icons. Labels fade back upon return.
+* ⏰ **Status Bar Barrier:** Prevents icons from flying over the clock, battery, and cellular indicators at the top of the screen.
+* 🏝 **Dynamic Island Hitbox:** Precise collision boundary matching the Dynamic Island pill on iPhone 14 Pro / Pro Max.
+* 📥 **Dock Floor Barrier vs Fall Through:** Toggle whether icons bounce off the top of the dock or fall behind it.
+* 📱 **Dock Icons Gravity:** Optionally enable physics for the icons inside the dock bar.
+* 🧲 **Smooth Gliding Return:** Gentle spring bounce on return with zero jerk at the end.
+* 🎯 **Pixel-Perfect Grid Restoration:** Absolute precision placement restoration with zero misplaced icons.
+* 🧩 **Full WidgetKit Support:** Interactive widgets can fall or act as static obstacle platforms.
+* 👆 **Finger Gravity:** Magnetic pull toward your touch point.
+* 🚀 **Tap to Launch Apps:** Tap any icon while falling to open apps immediately.
+* 🔒 **Home Screen Only:** Completely ignores shakes inside open apps or on the Lock Screen.
+* 🔇 **Silent:** Zero unwanted vibrations or sounds.
 
 ---
 
@@ -87,7 +95,7 @@
    * **`..._roothide.deb`** for **Dopamine RootHide**.
    * **`..._rootless.deb`** for **Dopamine Rootless / Palera1n**.
 3. Open the file in **Sileo**, **Zebra**, or **Filza**.
-4. Tap **Install** (or **Update**).
+4. Tap **Update** (or **Install**).
 5. Respring your device.
 
 ---

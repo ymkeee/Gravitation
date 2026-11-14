@@ -20,7 +20,7 @@ jobs:
     
     - name: Install Homebrew dependencies
       run: |
-        brew install ldid
+        brew install ldid dpkg
     
     - name: Install RootHide Theos
       run: |
@@ -63,6 +63,12 @@ jobs:
         
         echo "=== Built Packages ==="
         ls -lah dist/
+
+        echo "=== RootHide package contents ==="
+        dpkg-deb -c dist/com.ymkeee.gravitation_${VERSION}_roothide.deb
+
+        echo "=== Rootless package contents ==="
+        dpkg-deb -c dist/com.ymkeee.gravitation_${VERSION}_rootless.deb
     
     - name: Upload .deb artifacts
       uses: actions/upload-artifact@v4
@@ -93,21 +99,21 @@ jobs:
           
           ---
           
-          ### ✨ Features & Fixes:
-          - **Dual Environment:** Native packages for both RootHide and Rootless.
-          - **Zero Placement Bugs:** Pre-physics grid coordinates are preserved and restored with absolute precision.
-          - **Smooth Gliding Animation:** Icons slide smoothly across the screen with natural physics.
-          - **Organic Bounce:** Gentle spring bounce on return without any twitching at the end.
-          - **Full Widget Support:** Interactive widgets (2x2, 2x4, 4x4) tumble with real mass or stay as solid platforms.
-          - **App Launch on Tap:** Tap any icon while falling to open apps immediately.
-          - **Home Screen Only:** Completely ignores shakes inside open apps or on the Lock Screen.
-          - **Silent:** Zero unwanted vibrations or sounds.
-          - **Dynamic Island:** Bounces off the Dynamic Island on iPhone 14 Pro Max.
+          ### ✨ Что нового в v${{ steps.get_version.outputs.version }}:
+          - ⚙️ **Пункт настроек в iOS Settings (PreferenceLoader):** Твик теперь отображается в Настройках iOS с красивой иконкой и подробными переключателями.
+          - 🚫 **Чистые иконки без наезжающего текста:** Названия приложений скрываются во время падения, чтобы повернутый текст не перекрывал иконки, и плавно возвращаются на место.
+          - ⏰ **Хитбокс статус-бара (время и батарея):** Предотвращает залезание иконок на часы и индикатор заряда сверху экрана (переключается в настройках).
+          - 🏝 **Хитбокс Dynamic Island:** Физический отскок от Dynamic Island на iPhone 14 Pro Max.
+          - 📥 **Управление падением за док (Dock Barrier):** Переключатель между падением за док-бар или упругим отскоком от верхней границы дока.
+          - 📱 **Гравитация иконок в доке:** Опция включения/выключения гравитации для иконок в нижнем доке (Телефон, Safari, Сообщения, Музыка).
+          - 🔄 **Прямое обновление в Sileo:** Повышена версия для возможности нажать «Обновить» в пакетном менеджере.
           
-          ### 📲 Installation:
+          ---
+          
+          ### 📲 Установка / Installation:
           1. Скачайте нужный `.deb` ниже (**roothide** для RootHide или **rootless** для Rootless).
           2. Откройте в **Sileo**, **Zebra** или **Filza**.
-          3. Нажмите **«Установить»** или **«Обновить»**.
+          3. Нажмите **«Обновить»** (или **«Установить»**).
           4. Сделайте быстрый респринг (*Respring*).
         files: dist/*.deb
         draft: false
