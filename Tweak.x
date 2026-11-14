@@ -27,6 +27,15 @@ static CGFloat bounciness = 0.35;
 
 // #pragma mark - Preferences Loading
 
+static BOOL getBoolPref(NSDictionary *dict, NSString *key, BOOL defaultVal) {
+    if (dict && dict[key] != nil) {
+        return [dict[key] boolValue];
+    }
+    Boolean exists = false;
+    Boolean val = CFPreferencesGetAppBooleanValue((__bridge CFStringRef)key, (__bridge CFStringRef)kPrefsDomain, &exists);
+    return exists ? (BOOL)val : defaultVal;
+}
+
 static void loadPreferences(void) {
     isTweakEnabled = YES;
     isFingerGravityEnabled = YES;
@@ -47,23 +56,14 @@ static void loadPreferences(void) {
         prefsDict = [NSDictionary dictionaryWithContentsOfFile:@"/var/mobile/Library/Preferences/me.kritanta.gravitationprefs.plist"];
     }
 
-    auto getBool = ^BOOL(NSString *key, BOOL defaultVal) {
-        if (prefsDict && prefsDict[key] != nil) {
-            return [prefsDict[key] boolValue];
-        }
-        Boolean exists = false;
-        Boolean val = CFPreferencesGetAppBooleanValue((__bridge CFStringRef)key, (__bridge CFStringRef)kPrefsDomain, &exists);
-        return exists ? val : defaultVal;
-    };
-
-    isTweakEnabled = getBool(@"tweakEnabled", YES);
-    isFingerGravityEnabled = getBool(@"fingerGravity", YES);
-    shouldHideLabels = getBool(@"hideLabels", YES);
-    statusBarCollision = getBool(@"statusBarCollision", YES);
-    dynamicIslandCollision = getBool(@"dynamicIslandCollision", YES);
-    dockBarrier = getBool(@"dockBarrier", YES);
-    dockGravity = getBool(@"dockGravity", NO);
-    shouldWidgetsFall = getBool(@"widgetsFall", YES);
+    isTweakEnabled = getBoolPref(prefsDict, @"tweakEnabled", YES);
+    isFingerGravityEnabled = getBoolPref(prefsDict, @"fingerGravity", YES);
+    shouldHideLabels = getBoolPref(prefsDict, @"hideLabels", YES);
+    statusBarCollision = getBoolPref(prefsDict, @"statusBarCollision", YES);
+    dynamicIslandCollision = getBoolPref(prefsDict, @"dynamicIslandCollision", YES);
+    dockBarrier = getBoolPref(prefsDict, @"dockBarrier", YES);
+    dockGravity = getBoolPref(prefsDict, @"dockGravity", NO);
+    shouldWidgetsFall = getBoolPref(prefsDict, @"widgetsFall", YES);
 
     if (prefsDict && prefsDict[@"bounciness"] != nil) {
         bounciness = [prefsDict[@"bounciness"] doubleValue];
