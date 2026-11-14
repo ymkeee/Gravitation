@@ -442,9 +442,31 @@ static void startHardwareShakeDetector(void) {
             // Falls with full gravity physics
             [fallingViews addObject:subview];
 
-            // Only hide labels if user explicitly enabled it in settings
-            if (shouldHideLabels) {
-                setIconLabelsHidden(subview, YES, YES);
+            if (isIconView) {
+                CGFloat origW = subview.bounds.size.width;
+                CGFloat origH = subview.bounds.size.height;
+
+                if (shouldHideLabels) {
+                    // When labels are hidden: set bounds to square icon (origW x origW)
+                    // ZERO GAP between icons: icons touch edge to edge!
+                    setIconLabelsHidden(subview, YES, YES);
+                    subview.bounds = CGRectMake(0.0, 0.0, origW, origW);
+                } else {
+                    // When labels are visible: ENLARGE HITBOX to fully encompass the text!
+                    CGFloat labelMaxY = origH;
+                    CGFloat labelMaxW = origW;
+                    for (UIView *s in subview.subviews) {
+                        NSString *cls = NSStringFromClass([s class]);
+                        if ([cls containsString:@"Label"] || [cls containsString:@"Legibility"]) {
+                            labelMaxY = MAX(labelMaxY, CGRectGetMaxY(s.frame));
+                            labelMaxW = MAX(labelMaxW, s.frame.size.width);
+                        }
+                    }
+                    CGFloat fullH = MAX(labelMaxY + 5.0, origW + 28.0);
+                    CGFloat fullW = MAX(origW + 14.0, labelMaxW + 6.0);
+                    CGFloat originX = -(fullW - origW) / 2.0;
+                    subview.bounds = CGRectMake(originX, 0.0, fullW, fullH);
+                }
             }
         }
     }
@@ -545,9 +567,9 @@ static void startHardwareShakeDetector(void) {
         if (dockView && dockView.window) {
             CGRect dockFrameInWindow = [dockView convertRect:dockView.bounds toView:nil];
             CGRect dockFrameInList = [self convertRect:dockFrameInWindow fromView:nil];
-            dockTopInView = dockFrameInList.origin.y;
+            dockTopInView = dockFrameInList.origin.y - 18.0;
         } else {
-            CGPoint fallbackPt = [self convertPoint:CGPointMake(0, screenBounds.size.height - 120.0) fromView:nil];
+            CGPoint fallbackPt = [self convertPoint:CGPointMake(0, screenBounds.size.height - 138.0) fromView:nil];
             dockTopInView = fallbackPt.y;
         }
 
