@@ -1,4 +1,4 @@
-name: Build Gravitation Tweak (RootHide)
+name: Build Gravitation Tweak (RootHide & Rootless)
 
 on:
   push:
@@ -33,22 +33,42 @@ jobs:
         git clone --depth=1 https://github.com/theos/sdks.git $HOME/theos-sdks
         cp -R $HOME/theos-sdks/* $HOME/theos/sdks/
         ls -la $HOME/theos/sdks/
-    
-    - name: Build RootHide package
+
+    - name: Build RootHide & Rootless packages
       run: |
         export THEOS=$HOME/theos
+        mkdir -p dist
+        
+        VERSION=$(grep '^Version:' control | awk '{print $2}')
+        echo "Building version: $VERSION"
+
+        # 1. Build RootHide (iphoneos-arm64e)
+        echo "=== Building for RootHide ==="
+        python3 -c "c=open('control').read().replace('iphoneos-arm64\n','iphoneos-arm64e\n');open('control','w').write(c)"
         make clean
         make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
+        cp packages/*.deb dist/com.ymkeee.gravitation_${VERSION}_roothide.deb
+        rm -rf packages/*
+
+        # 2. Build Rootless (iphoneos-arm64)
+        echo "=== Building for Rootless ==="
+        python3 -c "c=open('control').read().replace('iphoneos-arm64e','iphoneos-arm64');open('control','w').write(c)"
+        make clean
+        make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+        cp packages/*.deb dist/com.ymkeee.gravitation_${VERSION}_rootless.deb
+        rm -rf packages/*
+
+        # Restore original control file
+        git checkout control
+        
+        echo "=== Built Packages ==="
+        ls -lah dist/
     
-    - name: List packages
-      run: |
-        ls -lah packages/
-    
-    - name: Upload .deb artifact
+    - name: Upload .deb artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: Gravitation-RootHide-deb
-        path: packages/*.deb
+        name: Gravitation-deb-packages
+        path: dist/*.deb
         if-no-files-found: error
 
     - name: Extract Version from control
@@ -57,34 +77,39 @@ jobs:
       run: |
         VERSION=$(grep '^Version:' control | awk '{print $2}')
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "Target release version: $VERSION"
 
-    - name: Publish GitHub Release
+    - name: Publish GitHub Release (RootHide & Rootless)
       if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ steps.get_version.outputs.version }}
-        name: "Gravitation v${{ steps.get_version.outputs.version }}"
+        name: "Gravitation v${{ steps.get_version.outputs.version }} (RootHide & Rootless)"
         body: |
-          ## Gravitation (RootHide Dopamine iOS 15 - 16+) 🚀
+          ## Gravitation v${{ steps.get_version.outputs.version }} 🚀
           
-          **Version ${{ steps.get_version.outputs.version }}**
+          ### 📦 Доступно две версии / Two versions available:
+          - **`..._roothide.deb`** — Для **Dopamine RootHide** (iOS 15.0 – 16.7+).
+          - **`..._rootless.deb`** — Для стандартного **Rootless** (**Dopamine Rootless**, **Palera1n**, **XinaA15**, etc.).
           
-          ### ✨ Improvements & Fixes:
-          - **RootHide Dopamine Ready:** Fully compiled for Dopamine RootHide (`iphoneos-arm64e`, A12–A16 / iPhone 14 Pro Max).
-          - **Zero Icon Return Bugs:** Icons smoothly glide and bounce back into their pixel-perfect grid locations without any twitching or misplacement.
-          - **Full Widget Support:** Interactive widgets (2x2, 2x4, 4x4) tumble with realistic mass or act as solid bounce platforms.
+          ---
+          
+          ### ✨ Features & Fixes:
+          - **Dual Environment:** Native packages for both RootHide and Rootless.
+          - **Zero Placement Bugs:** Pre-physics grid coordinates are preserved and restored with absolute precision.
+          - **Smooth Gliding Animation:** Icons slide smoothly across the screen with natural physics.
+          - **Organic Bounce:** Gentle spring bounce on return without any twitching at the end.
+          - **Full Widget Support:** Interactive widgets (2x2, 2x4, 4x4) tumble with real mass or stay as solid platforms.
           - **App Launch on Tap:** Tap any icon while falling to open apps immediately.
-          - **Home Screen Only:** Completely ignores shakes inside apps (Telegram, Safari, etc.) and on the lockscreen.
+          - **Home Screen Only:** Completely ignores shakes inside open apps or on the Lock Screen.
           - **Silent:** Zero unwanted vibrations or sounds.
-          - **Dynamic Island Collision:** Bounces off the Dynamic Island on iPhone 14 Pro Max.
+          - **Dynamic Island:** Bounces off the Dynamic Island on iPhone 14 Pro Max.
           
           ### 📲 Installation:
-          1. Download the `.deb` file below.
-          2. Open in **Sileo**, **Zebra**, or **Filza**.
-          3. Tap **Install** or **Update**.
-          4. Respring device (`sbreload`).
-        files: packages/*.deb
+          1. Скачайте нужный `.deb` ниже (**roothide** для RootHide или **rootless** для Rootless).
+          2. Откройте в **Sileo**, **Zebra** или **Filza**.
+          3. Нажмите **«Установить»** или **«Обновить»**.
+          4. Сделайте быстрый респринг (*Respring*).
+        files: dist/*.deb
         draft: false
         prerelease: false
       env:
